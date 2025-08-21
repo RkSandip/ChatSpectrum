@@ -16,7 +16,7 @@ import pandas as pd
 from sklearn.metrics.pairwise import cosine_similarity
 import hashlib
 import os
-
+plt.rcParams["font.family"] = ["DejaVu Sans", "Noto Color Emoji"]
 # ===================== Custom Background Color ===================== #bffcc6
 st.markdown(
     """
@@ -235,7 +235,7 @@ if mode == "Show Analysis":
         else:
             st.dataframe(emoji_df)
     with col2:
-        plt.rcParams['font.family'] = 'Segoe UI Emoji'
+        # plt.rcParams['font.family'] = 'DejaVu Sans'
         if emoji_df.empty:
             st.write("No emojis to display.")
         else:
@@ -303,6 +303,7 @@ if mode == "Sentiment Analysis":
     negative_df = df_sent[df_sent["sentiment"] == "negative"].sort_values(by="confidence", ascending=False)
     st.write("### Top Negative Messages (Top 100)")
     st.dataframe(negative_df[["user", "message", "confidence"]].head(100))
+
 
 
 
