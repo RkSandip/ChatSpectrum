@@ -1,4 +1,12 @@
 import streamlit as st
+# ✅ Set page config 
+st.set_page_config(
+    # layout="wide"
+    page_title= "ChatSpectrum",
+    page_icon= "icon.png"
+    )
+
+
 import preprocessor, helper
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -47,12 +55,6 @@ if "sentiment_done" not in st.session_state:
     st.session_state.sentiment_result = None
 # =======================================================
 
-# ✅ Set page config 
-st.set_page_config(
-    # layout="wide"
-    page_title= "ChatSpectrum",
-    page_icon= "icon.png"
-    )
 
 st.title("Whatsapp Chat Analyzer")
 
@@ -285,3 +287,4 @@ if mode == "Sentiment Analysis":
     negative_df = df_sent[df_sent["sentiment"] == "negative"].sort_values(by="confidence", ascending=False)
     st.write("### Top Negative Messages (Top 100)")
     st.dataframe(negative_df[["user", "message", "confidence"]].head(100))
+
