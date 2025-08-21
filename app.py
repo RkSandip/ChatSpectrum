@@ -283,8 +283,24 @@ if mode == "Sentiment Analysis":
     sns.heatmap(sim_df_top, mask=mask, cmap="GnBu", annot=True, fmt=".2f", annot_kws={"size":8}, ax=ax)
     st.pyplot(fig)
 
+    # ========= STEP 6: Per-User Sentiment Breakdown (Top 50 Users) ==========
+    user_sentiment = pd.crosstab(df_sent["user"], df_sent["sentiment"])
+    top_users = df_sent["user"].value_counts().head(50).index
+    user_sentiment_top = user_sentiment.loc[top_users]
+    
+    st.write("### Per-User Sentiment Distribution (Top 50 Users)")
+    fig, ax = plt.subplots(figsize=(14,6))
+    user_sentiment_top.plot(kind="bar", stacked=True,
+                            color=[colors.get(x,"blue") for x in user_sentiment_top.columns], ax=ax)
+    ax.set_xlabel("User")
+    ax.set_ylabel("Message Count")
+    ax.legend(title="Sentiment", bbox_to_anchor=(1.05,1), loc='upper left')
+    plt.tight_layout()
+    st.pyplot(fig)
+
     # Top negative messages
     negative_df = df_sent[df_sent["sentiment"] == "negative"].sort_values(by="confidence", ascending=False)
     st.write("### Top Negative Messages (Top 100)")
     st.dataframe(negative_df[["user", "message", "confidence"]].head(100))
+
 
