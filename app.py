@@ -6,6 +6,15 @@ st.set_page_config(
     page_icon="icon.png"
 )
 
+st.markdown(
+    """
+    ---
+    👨‍💻 **Developed by [Your Name](https://github.com/YourUsername)**
+    """,
+    unsafe_allow_html=True
+)
+
+
 import preprocessor, helper
 import seaborn as sns
 import sentiment  # your sentiment.py
@@ -278,6 +287,7 @@ if mode == "Sentiment Analysis":
     negative_df = df_sent[df_sent["sentiment"] == "negative"].sort_values(by="confidence", ascending=False)
     st.write("### Top Negative Messages (Top 100)")
     st.dataframe(negative_df[["user", "message", "confidence"]].head(100))
+
 
 
 
