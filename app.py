@@ -1,4 +1,5 @@
 import streamlit as st
+
 # ✅ Set page config 
 st.set_page_config(
     # layout="wide"
@@ -16,10 +17,6 @@ import pandas as pd
 from sklearn.metrics.pairwise import cosine_similarity
 import hashlib
 import os
-
-
-# Optional: fallback for emojis
-plt.rcParams["font.family"] = ["DejaVu Sans", "Noto Color Emoji"]
 
 # ===================== Custom Background Color ===================== #bffcc6
 st.markdown(
@@ -239,7 +236,7 @@ if mode == "Show Analysis":
         else:
             st.dataframe(emoji_df)
     with col2:
-        # plt.rcParams['font.family'] = 'DejaVu Sans'
+        plt.rcParams['font.family'] = 'Segoe UI Emoji'
         if emoji_df.empty:
             st.write("No emojis to display.")
         else:
@@ -301,17 +298,8 @@ if mode == "Sentiment Analysis":
     ax.legend(title="Sentiment", bbox_to_anchor=(1.05,1), loc='upper left')
     plt.tight_layout()
     st.pyplot(fig)
-    
 
     # Top negative messages
     negative_df = df_sent[df_sent["sentiment"] == "negative"].sort_values(by="confidence", ascending=False)
     st.write("### Top Negative Messages (Top 100)")
     st.dataframe(negative_df[["user", "message", "confidence"]].head(100))
-
-
-
-
-
-
-
-
