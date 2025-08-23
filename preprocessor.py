@@ -30,17 +30,8 @@ def preprocess(data):
 
     df = pd.DataFrame({'user_message': texts, 'message_date': dates})
 
-    # Function to parse both 2-digit and 4-digit years
-    def parse_date(x):
-        for fmt in ['%d/%m/%Y,%H:%M', '%d/%m/%y,%H:%M']:
-            try:
-                return pd.to_datetime(x, format=fmt)
-            except:
-                continue
-        return pd.NaT
-
-    # Apply parsing
-    df['date'] = df['message_date'].apply(parse_date)
+    # Convert date string → datetime, infer both 2-digit and 4-digit years
+    df['date'] = pd.to_datetime(df['message_date'], dayfirst=True, errors='coerce')
     df.drop(columns=['message_date'], inplace=True)
 
     # Split user and message
