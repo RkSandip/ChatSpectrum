@@ -18,15 +18,8 @@ import matplotlib.font_manager as fm
 import matplotlib.pyplot as plt
 
 # ===================== FONTS =====================
-bengali_font_path = "fonts/NotoSansBengali-VariableFont_wdth,wght.ttf"
 
-if os.path.exists(bengali_font_path):
-    bengali_prop = fm.FontProperties(fname=bengali_font_path)
-    plt.rcParams["font.family"] = [bengali_prop.get_name(), "DejaVu Sans"]
-else:
-    plt.rcParams["font.family"] = ["DejaVu Sans"]
-    print("Warning: Bengali font not found. Using default font.")
-
+plt.rcParams["font.family"] = ["DejaVu Sans", "Noto Color Emoji", "Nirmala UI"]
 
 # ===================== CUSTOM BACKGROUND =====================
 st.markdown(
@@ -285,5 +278,6 @@ if mode == "Sentiment Analysis":
     negative_df = df_sent[df_sent["sentiment"] == "negative"].sort_values(by="confidence", ascending=False)
     st.write("### Top Negative Messages (Top 100)")
     st.dataframe(negative_df[["user", "message", "confidence"]].head(100))
+
 
 
