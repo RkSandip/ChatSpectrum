@@ -2,23 +2,16 @@ import re
 import pandas as pd
 
 def preprocess(data):
-    """
-    Preprocess WhatsApp chat text into a structured DataFrame.
-    Handles 2-digit and 4-digit years, Bengali/Unicode names, and media messages.
-    """
-
-    # Pattern to split date, time, and message
+    # Match both 2-digit and 4-digit years
     pattern = r'(\d{1,2}/\d{1,2}/\d{2,4}),\s(\d{1,2}:\d{2})\s-\s'
+
     messages = re.split(pattern, data)
-    
-    # Remove empty first element if present
+    # messages = ['', day, time, message, day, time, message,...]
     if not messages[0].strip():
         messages = messages[1:]
 
     dates = []
     texts = []
-
-    # Reconstruct message list: [date, time, message, date, time, message,...]
     for i in range(0, len(messages), 3):
         date_str = f"{messages[i]},{messages[i+1]}"
         msg = messages[i+2]
@@ -27,7 +20,7 @@ def preprocess(data):
 
     df = pd.DataFrame({'user_message': texts, 'message_date': dates})
 
-    # Function to parse date supporting 2-digit and 4-digit years
+    # Try parsing both 2-digit and 4-digit years
     def parse_date(x):
         for fmt in ['%d/%m/%Y,%H:%M', '%d/%m/%y,%H:%M']:
             try:
@@ -39,9 +32,9 @@ def preprocess(data):
     df['date'] = df['message_date'].apply(parse_date)
     df.drop(columns=['message_date'], inplace=True)
 
-    # Extract user and message
     users = []
     messages_clean = []
+
     for msg in df['user_message']:
         entry = re.split(r'([\w\W]+?):\s', msg, maxsplit=1)
         if len(entry) >= 3:
@@ -55,7 +48,7 @@ def preprocess(data):
     df['message'] = messages_clean
     df.drop(columns=['user_message'], inplace=True)
 
-    # Clean empty / media messages
+    # Remove media/deleted/empty messages
     df['message'] = df['message'].astype(str).str.strip()
     remove_list = ["<Media omitted>", "This message was deleted", "You deleted this message"]
     df = df[~df["message"].isin(remove_list)]
