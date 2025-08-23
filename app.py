@@ -239,7 +239,7 @@ if mode == "Show Analysis":
         else:
             st.dataframe(emoji_df)
     with col2:
-        plt.rcParams['font.family'] = 'Segoe UI Emoji'
+        # plt.rcParams['font.family'] = 'Segoe UI Emoji'
         if emoji_df.empty:
             st.write("No emojis to display.")
         else:
@@ -306,4 +306,5 @@ if mode == "Sentiment Analysis":
     negative_df = df_sent[df_sent["sentiment"] == "negative"].sort_values(by="confidence", ascending=False)
     st.write("### Top Negative Messages (Top 100)")
     st.dataframe(negative_df[["user", "message", "confidence"]].head(100))
+
 
