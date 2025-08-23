@@ -2,28 +2,25 @@ import re
 import pandas as pd
 
 def preprocess(data):
-    # Regex: split messages by date/time
+    # -------------------- Step 1: Split messages by date pattern --------------------
+    # Handles 1-2 digit day/month, 2-digit or 4-digit year
     pattern = r'(\d{1,2}/\d{1,2}/\d{2,4}),\s(\d{1,2}:\d{2})\s-\s'
-
-    split_data = re.split(pattern, data)
-    if not split_data[0].strip():
-        split_data = split_data[1:]
-
+    
+    messages = re.split(pattern, data)
+    if not messages[0].strip():
+        messages = messages[1:]
+    
     dates = []
-    messages = []
-    for i in range(0, len(split_data), 3):
-        try:
-            date_str = f"{split_data[i]},{split_data[i+1]}"
-            msg = split_data[i+2]
-        except IndexError:
-            continue
-        dates.append(date_str.strip())
-        messages.append(msg.strip())
+    texts = []
+    for i in range(0, len(messages), 3):
+        date_str = f"{messages[i]},{messages[i+1]}"
+        msg = messages[i+2]
+        dates.append(date_str)
+        texts.append(msg)
+    
+    df = pd.DataFrame({'user_message': texts, 'message_date': dates})
 
-    df = pd.DataFrame({'raw_message': messages, 'message_date': dates})
-
-    # ----- Safe date parsing -----
-    # ----- Safe date parsing -----
+    # -------------------- Step 2: Safe date parsing --------------------
     def parse_date(x):
         x = x.strip().rstrip(" -")  # remove trailing dash/space
         for fmt in ['%d/%m/%Y,%H:%M', '%d/%m/%y,%H:%M']:
@@ -31,34 +28,34 @@ def preprocess(data):
                 return pd.to_datetime(x, format=fmt)
             except:
                 continue
-        return pd.NaT  # if both fail, mark as missing
-
-
+        return pd.NaT  # if both fail
+    
     df['date'] = df['message_date'].apply(parse_date)
     df.drop(columns=['message_date'], inplace=True)
 
-    # ----- Extract users -----
+    # -------------------- Step 3: Extract user and message --------------------
     users = []
-    clean_messages = []
-    for msg in df['raw_message']:
+    messages_clean = []
+    for msg in df['user_message']:
         entry = re.split(r'([\w\W]+?):\s', msg, maxsplit=1)
         if len(entry) >= 3:
-            users.append(entry[1].strip())
-            clean_messages.append(entry[2].strip())
+            users.append(entry[1])
+            messages_clean.append(entry[2])
         else:
             users.append('group_notification')
-            clean_messages.append(msg.strip())
-
+            messages_clean.append(entry[0])
+    
     df['user'] = users
-    df['message'] = clean_messages
-    df.drop(columns=['raw_message'], inplace=True)
+    df['message'] = messages_clean
+    df.drop(columns=['user_message'], inplace=True)
 
-    # ----- Remove unwanted messages -----
+    # -------------------- Step 4: Remove media / deleted / empty messages --------------------
+    df['message'] = df['message'].astype(str).str.strip()
     remove_list = ["<Media omitted>", "This message was deleted", "You deleted this message"]
     df = df[~df["message"].isin(remove_list)]
     df = df[df["message"] != ""].reset_index(drop=True)
 
-    # ----- Extra datetime columns -----
+    # -------------------- Step 5: Add extra datetime columns --------------------
     df['only_date'] = df['date'].dt.date
     df['year'] = df['date'].dt.year
     df['month_num'] = df['date'].dt.month
@@ -68,7 +65,7 @@ def preprocess(data):
     df['hour'] = df['date'].dt.hour
     df['minute'] = df['date'].dt.minute
 
-    # ----- Period column -----
+    # -------------------- Step 6: Create period column --------------------
     period = []
     for hour in df['hour']:
         if hour == 23:
@@ -80,4 +77,3 @@ def preprocess(data):
     df['period'] = period
 
     return df
-
