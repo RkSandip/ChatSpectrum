@@ -5,6 +5,7 @@ def preprocess(data):
     # Match both 2-digit and 4-digit years
     pattern = r'(\d{1,2}/\d{1,2}/\d{2,4}),\s(\d{1,2}:\d{2})\s-\s'
 
+    # Split messages by date-time pattern
     messages = re.split(pattern, data)
     # messages = ['', day, time, message, day, time, message,...]
     if not messages[0].strip():
@@ -20,8 +21,9 @@ def preprocess(data):
 
     df = pd.DataFrame({'user_message': texts, 'message_date': dates})
 
-    # Try parsing both 2-digit and 4-digit years
+    # ---------------- Parse dates safely ----------------
     def parse_date(x):
+        x = x.strip().rstrip(" -")  # remove trailing dash and spaces
         for fmt in ['%d/%m/%Y,%H:%M', '%d/%m/%y,%H:%M']:
             try:
                 return pd.to_datetime(x, format=fmt)
@@ -32,6 +34,7 @@ def preprocess(data):
     df['date'] = df['message_date'].apply(parse_date)
     df.drop(columns=['message_date'], inplace=True)
 
+    # ---------------- Extract users and messages ----------------
     users = []
     messages_clean = []
 
@@ -48,13 +51,13 @@ def preprocess(data):
     df['message'] = messages_clean
     df.drop(columns=['user_message'], inplace=True)
 
-    # Remove media/deleted/empty messages
+    # ---------------- Remove unwanted messages ----------------
     df['message'] = df['message'].astype(str).str.strip()
     remove_list = ["<Media omitted>", "This message was deleted", "You deleted this message"]
     df = df[~df["message"].isin(remove_list)]
     df = df[df["message"] != ""].reset_index(drop=True)
 
-    # Extra datetime columns
+    # ---------------- Extra datetime columns ----------------
     df['only_date'] = df['date'].dt.date
     df['year'] = df['date'].dt.year
     df['month_num'] = df['date'].dt.month
@@ -64,7 +67,7 @@ def preprocess(data):
     df['hour'] = df['date'].dt.hour
     df['minute'] = df['date'].dt.minute
 
-    # Period column
+    # ---------------- Period column ----------------
     period = []
     for hour in df['hour']:
         if hour == 23:
