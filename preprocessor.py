@@ -2,7 +2,15 @@ import re
 import pandas as pd
 
 def preprocess(data):
+    """
+    Preprocess WhatsApp chat text into a structured DataFrame.
+    Handles both 2-digit and 4-digit years, media messages, emojis, and user extraction.
+    """
+
+    # Match date & time at the start of a message
     pattern = r'(\d{1,2}/\d{1,2}/\d{2,4}),\s(\d{1,2}:\d{2})\s-\s'
+
+    # Split data into date/time and message
     messages = re.split(pattern, data)
     if not messages[0].strip():
         messages = messages[1:]
@@ -10,26 +18,34 @@ def preprocess(data):
     dates = []
     texts = []
 
+    # Every 3 elements: date, time, message
     for i in range(0, len(messages), 3):
-        date_str = f"{messages[i]},{messages[i+1]}"
-        msg = messages[i+2]
-        dates.append(date_str)
-        texts.append(msg)
+        try:
+            date_str = f"{messages[i]},{messages[i+1]}"
+            msg = messages[i+2]
+            dates.append(date_str)
+            texts.append(msg)
+        except IndexError:
+            continue  # skip incomplete entries
 
     df = pd.DataFrame({'user_message': texts, 'message_date': dates})
 
-    # ===== Flexible date parsing =====
-    df['date'] = pd.to_datetime(
-        df['message_date'].str.replace(r'\s-\s$', '', regex=True),
-        dayfirst=True,
-        errors='coerce'
-    )
+    # Function to parse both 2-digit and 4-digit years
+    def parse_date(x):
+        for fmt in ['%d/%m/%Y,%H:%M', '%d/%m/%y,%H:%M']:
+            try:
+                return pd.to_datetime(x, format=fmt)
+            except:
+                continue
+        return pd.NaT
+
+    # Apply parsing
+    df['date'] = df['message_date'].apply(parse_date)
     df.drop(columns=['message_date'], inplace=True)
 
-    # Extract user and message
+    # Split user and message
     users = []
     messages_clean = []
-
     for msg in df['user_message']:
         entry = re.split(r'([\w\W]+?):\s', msg, maxsplit=1)
         if len(entry) >= 3:
@@ -59,7 +75,7 @@ def preprocess(data):
     df['hour'] = df['date'].dt.hour
     df['minute'] = df['date'].dt.minute
 
-    # Period
+    # Period column for heatmaps
     period = []
     for hour in df['hour']:
         if hour == 23:
