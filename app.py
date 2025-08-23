@@ -6,14 +6,6 @@ st.set_page_config(
     page_icon="icon.png"
 )
 
-st.markdown(
-    """
-    ---
-    👨‍💻 **Developed by [Your Name](https://github.com/YourUsername)**
-    """,
-    unsafe_allow_html=True
-)
-
 
 import preprocessor, helper
 import seaborn as sns
@@ -290,4 +282,11 @@ if mode == "Sentiment Analysis":
 
 
 
+
+# --- Footer ---
+st.markdown("---")
+st.markdown(
+    "👨‍💻 Developer: **Sandip**  \n"
+    "GitHub: **github.com/YourUsername**"
+)
 
