@@ -18,6 +18,9 @@ from sklearn.metrics.pairwise import cosine_similarity
 import hashlib
 import os
 
+# Optional: fallback for emojis
+plt.rcParams["font.family"] = ["DejaVu Sans", "Noto Color Emoji"]
+
 # ===================== Custom Background Color ===================== #bffcc6
 st.markdown(
     """
@@ -303,3 +306,4 @@ if mode == "Sentiment Analysis":
     negative_df = df_sent[df_sent["sentiment"] == "negative"].sort_values(by="confidence", ascending=False)
     st.write("### Top Negative Messages (Top 100)")
     st.dataframe(negative_df[["user", "message", "confidence"]].head(100))
+
