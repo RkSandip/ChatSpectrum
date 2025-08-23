@@ -2,7 +2,7 @@ import re
 import pandas as pd
 
 def preprocess(data):
-    # Match both 2-digit and 4-digit years
+    # Match both 2-digit and 4-digit years, time, and dash
     pattern = r'(\d{1,2}/\d{1,2}/\d{2,4}),\s(\d{1,2}:\d{2})\s-\s'
 
     messages = re.split(pattern, data)
@@ -20,7 +20,7 @@ def preprocess(data):
 
     df = pd.DataFrame({'user_message': texts, 'message_date': dates})
 
-    # Try parsing both 2-digit and 4-digit years
+    # Robust date parsing: 2-digit or 4-digit years
     def parse_date(x):
         for fmt in ['%d/%m/%Y,%H:%M', '%d/%m/%y,%H:%M']:
             try:
@@ -65,14 +65,6 @@ def preprocess(data):
     df['minute'] = df['date'].dt.minute
 
     # Period column
-    period = []
-    for hour in df['hour']:
-        if hour == 23:
-            period.append(f"{hour}-00")
-        elif hour == 0:
-            period.append(f"00-{hour+1}")
-        else:
-            period.append(f"{hour}-{hour+1}")
-    df['period'] = period
+    df['period'] = df['hour'].apply(lambda hour: f"{hour}-{(hour+1)%24}")
 
     return df
