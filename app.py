@@ -9,7 +9,6 @@ st.set_page_config(
 
 
 import preprocessor, helper
-import matplotlib.pyplot as plt
 import seaborn as sns
 import sentiment  # your sentiment.py
 import numpy as np
@@ -18,12 +17,12 @@ from sklearn.metrics.pairwise import cosine_similarity
 import hashlib
 import os
 import matplotlib.font_manager as fm
+import matplotlib.pyplot as plt
 
-# Path to your Bengali TTF font
+# Use only the Bengali font you uploaded
 bengali_font_path = "fonts/NotoSansBengali-VariableFont_wdth,wght.ttf"
 prop = fm.FontProperties(fname=bengali_font_path)
 
-# Only use Bengali font to avoid warnings
 plt.rcParams["font.family"] = [prop.get_name()]
 
 
@@ -314,6 +313,7 @@ if mode == "Sentiment Analysis":
     negative_df = df_sent[df_sent["sentiment"] == "negative"].sort_values(by="confidence", ascending=False)
     st.write("### Top Negative Messages (Top 100)")
     st.dataframe(negative_df[["user", "message", "confidence"]].head(100))
+
 
 
 
