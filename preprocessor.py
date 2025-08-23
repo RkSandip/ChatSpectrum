@@ -2,47 +2,59 @@ import re
 import pandas as pd
 
 def preprocess(data):
-    pattern = '\d{1,2}/\d{1,2}/\d{2,4},\s\d{1,2}:\d{2}\s-\s'
+    # Match both 2-digit and 4-digit years
+    pattern = r'(\d{1,2}/\d{1,2}/\d{2,4}),\s(\d{1,2}:\d{2})\s-\s'
 
-    messages = re.split(pattern, data)[1:]
-    dates = re.findall(pattern, data)
+    messages = re.split(pattern, data)
+    # messages = ['', day, time, message, day, time, message,...]
+    if not messages[0].strip():
+        messages = messages[1:]
 
-    df = pd.DataFrame({'user_message': messages, 'message_date': dates})
-    # convert message_date type
-    df['message_date'] = pd.to_datetime(df['message_date'], format='%d/%m/%Y, %H:%M - ')
+    dates = []
+    texts = []
+    for i in range(0, len(messages), 3):
+        date_str = f"{messages[i]},{messages[i+1]}"
+        msg = messages[i+2]
+        dates.append(date_str)
+        texts.append(msg)
 
-    df.rename(columns={'message_date': 'date'}, inplace=True)
+    df = pd.DataFrame({'user_message': texts, 'message_date': dates})
+
+    # Try parsing both 2-digit and 4-digit years
+    def parse_date(x):
+        for fmt in ['%d/%m/%Y,%H:%M', '%d/%m/%y,%H:%M']:
+            try:
+                return pd.to_datetime(x, format=fmt)
+            except:
+                continue
+        return pd.NaT
+
+    df['date'] = df['message_date'].apply(parse_date)
+    df.drop(columns=['message_date'], inplace=True)
 
     users = []
-    messages = []
-    for message in df['user_message']:
-        entry = re.split('([\w\W]+?):\s', message)
-        if entry[1:]:  # user name
+    messages_clean = []
+
+    for msg in df['user_message']:
+        entry = re.split(r'([\w\W]+?):\s', msg, maxsplit=1)
+        if len(entry) >= 3:
             users.append(entry[1])
-            messages.append(" ".join(entry[2:]))
+            messages_clean.append(entry[2])
         else:
             users.append('group_notification')
-            messages.append(entry[0])
+            messages_clean.append(entry[0])
 
     df['user'] = users
-    df['message'] = messages
+    df['message'] = messages_clean
     df.drop(columns=['user_message'], inplace=True)
 
-
-      # ========= REMOVE media, deleted, and empty messages =========
-    df["message"] = df["message"].str.strip().str.replace(r'\s+', ' ', regex=True)
-
-    remove_list = [
-        "<Media omitted>",
-        "This message was deleted",
-        "You deleted this message"
-    ]
-
+    # Remove media/deleted/empty messages
+    df['message'] = df['message'].astype(str).str.strip()
+    remove_list = ["<Media omitted>", "This message was deleted", "You deleted this message"]
     df = df[~df["message"].isin(remove_list)]
-    df = df[df["message"] != ""]
-    df = df.reset_index(drop=True)
+    df = df[df["message"] != ""].reset_index(drop=True)
 
-    # ========= Add extra datetime columns =========
+    # Extra datetime columns
     df['only_date'] = df['date'].dt.date
     df['year'] = df['date'].dt.year
     df['month_num'] = df['date'].dt.month
@@ -52,16 +64,15 @@ def preprocess(data):
     df['hour'] = df['date'].dt.hour
     df['minute'] = df['date'].dt.minute
 
-     # ========= Create time periods =========
+    # Period column
     period = []
-    for hour in df[['day_name', 'hour']]['hour']:
+    for hour in df['hour']:
         if hour == 23:
-            period.append(str(hour) + "-" + str('00'))
+            period.append(f"{hour}-00")
         elif hour == 0:
-            period.append(str('00') + "-" + str(hour + 1))
+            period.append(f"00-{hour+1}")
         else:
-            period.append(str(hour) + "-" + str(hour + 1))
-
+            period.append(f"{hour}-{hour+1}")
     df['period'] = period
 
     return df
