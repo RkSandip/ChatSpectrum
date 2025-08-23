@@ -4,13 +4,13 @@ import pandas as pd
 def preprocess(data):
     """
     Preprocess WhatsApp chat text into a structured DataFrame.
-    Handles both 2-digit and 4-digit years, media messages, emojis, and user extraction.
+    Works with both 2-digit and 4-digit years.
     """
 
     # Match date & time at the start of a message
     pattern = r'(\d{1,2}/\d{1,2}/\d{2,4}),\s(\d{1,2}:\d{2})\s-\s'
 
-    # Split data into date/time and message
+    # Split messages
     messages = re.split(pattern, data)
     if not messages[0].strip():
         messages = messages[1:]
@@ -18,7 +18,6 @@ def preprocess(data):
     dates = []
     texts = []
 
-    # Every 3 elements: date, time, message
     for i in range(0, len(messages), 3):
         try:
             date_str = f"{messages[i]},{messages[i+1]}"
@@ -26,12 +25,25 @@ def preprocess(data):
             dates.append(date_str)
             texts.append(msg)
         except IndexError:
-            continue  # skip incomplete entries
+            continue
 
     df = pd.DataFrame({'user_message': texts, 'message_date': dates})
 
-    # Convert date string → datetime, infer both 2-digit and 4-digit years
-    df['date'] = pd.to_datetime(df['message_date'], dayfirst=True, errors='coerce')
+    # Robust datetime parsing for 2-digit or 4-digit year
+    def parse_date(x):
+        x = x.strip()
+        for fmt in ['%d/%m/%Y,%H:%M', '%d/%m/%y,%H:%M']:
+            try:
+                dt = pd.to_datetime(x, format=fmt)
+                # If year < 100, adjust to 2000+ year
+                if dt.year < 100:
+                    dt = dt.replace(year=dt.year + 2000)
+                return dt
+            except:
+                continue
+        return pd.NaT
+
+    df['date'] = df['message_date'].apply(parse_date)
     df.drop(columns=['message_date'], inplace=True)
 
     # Split user and message
