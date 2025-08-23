@@ -2,11 +2,9 @@ import streamlit as st
 
 # ✅ Set page config 
 st.set_page_config(
-    # layout="wide"
-    page_title= "ChatSpectrum",
-    page_icon= "icon.png"
-    )
-
+    page_title="ChatSpectrum",
+    page_icon="icon.png"
+)
 
 import preprocessor, helper
 import seaborn as sns
@@ -19,48 +17,38 @@ import os
 import matplotlib.font_manager as fm
 import matplotlib.pyplot as plt
 
+# ===================== FONTS =====================
 # Bengali font
 bengali_font_path = "fonts/NotoSansBengali-VariableFont_wdth,wght.ttf"
 bengali_prop = fm.FontProperties(fname=bengali_font_path)
 
-# Default font for English / numbers
-default_fonts = ["DejaVu Sans"]  # Available on Streamlit Cloud
+# Default font for English / numbers / fallback
+default_fonts = ["DejaVu Sans", "Symbola"]  # Symbola covers most emojis
 
-# Set matplotlib to try Bengali first, then English fonts
+# Set matplotlib to try Bengali first, then English/emoji fonts
 plt.rcParams["font.family"] = [bengali_prop.get_name()] + default_fonts
 
-
-#plt.rcParams["font.family"] = ["DejaVu Sans", "Noto Color Emoji", "Nirmala UI"]
-
-# ===================== Custom Background Color ===================== #bffcc6
+# ===================== CUSTOM BACKGROUND =====================
 st.markdown(
     """
     <style>
     /* Main app background */
-    .stApp {
-        background-color: #159688;
-    }
+    .stApp { background-color: #159688; }
 
-    /* Main content text only */
-    .block-container {
-        color: black !important;
-    }
+    /* Main content text */
+    .block-container { color: black !important; }
 
-    /* Sidebar background and text remain default */
-    .css-1d391kg {  /* sidebar container class in Streamlit 1.x/2.x */
-        color: initial !important;
-    }
+    /* Sidebar default color */
+    .css-1d391kg { color: initial !important; }
 
-    /* Keep top menu buttons visible */
-    button[title="Settings"], button[title="Send feedback"], .css-1v3fvcr { 
-        color: initial !important;
-    }
+    /* Top menu buttons */
+    button[title="Settings"], button[title="Send feedback"], .css-1v3fvcr { color: initial !important; }
     </style>
     """,
     unsafe_allow_html=True
 )
 
-# ===================== ✅ Caching =====================
+# ===================== CACHING =====================
 if "file_hash" not in st.session_state:
     st.session_state.file_hash = None
 if "user_analysis_cache" not in st.session_state:
@@ -68,40 +56,29 @@ if "user_analysis_cache" not in st.session_state:
 if "sentiment_done" not in st.session_state:
     st.session_state.sentiment_done = False
     st.session_state.sentiment_result = None
-# =======================================================
 
-
+# ===================== APP TITLE =====================
 st.title("Whatsapp Chat Analyzer")
 
-# Path to default file
+# Default file path
 default_file_path = "demo.txt"
 
-
-
-# ===================== File Upload / Default =====================
+# ===================== FILE UPLOAD / DEFAULT =====================
 uploaded_file = st.sidebar.file_uploader("Choose a text file", type="txt")
-
 if uploaded_file is not None:
-    # Clean the filename on the fly
     filename = uploaded_file.name.replace(" ", "_").replace(",", "_")
     st.markdown(f"**File Name:** - &nbsp; {filename}", unsafe_allow_html=True)
-
-    # Read file content
     data_bytes = uploaded_file.getvalue()
     data = data_bytes.decode("utf-8")
-
 elif os.path.exists(default_file_path):
-    # Use default file
     st.markdown(f"**File Name:** - &nbsp; {default_file_path} (default)", unsafe_allow_html=True)
     with open(default_file_path, "r", encoding="utf-8") as f:
         data = f.read()
-
 else:
     st.error(f"Default file '{default_file_path}' not found.")
     st.stop()
 
-
-# ===================== Compute hash for caching =====================
+# ===================== COMPUTE FILE HASH =====================
 file_hash = hashlib.md5(data.encode("utf-8")).hexdigest()
 if st.session_state.file_hash != file_hash:
     st.session_state.file_hash = file_hash
@@ -109,27 +86,25 @@ if st.session_state.file_hash != file_hash:
     st.session_state.sentiment_done = False
     st.session_state.sentiment_result = None
 
-# ===================== Preprocess data =====================
+# ===================== PREPROCESS =====================
 df = preprocessor.preprocess(data)
 
-# ===================== Fetch users =====================
+# ===================== FETCH USERS =====================
 user_list = df['user'].unique().tolist()
 if "group_notification" in user_list:
     user_list.remove('group_notification')
 user_list.sort()
 user_list.insert(0, "Overall")
 
-# ===================== Mode selection =====================
+# ===================== MODE SELECTION =====================
 mode = st.sidebar.radio("Choose Mode", ["Show Analysis", "Sentiment Analysis"])
 
 # ===================== SHOW ANALYSIS =====================
 if mode == "Show Analysis":
     selected_user = st.sidebar.selectbox("Show analysis wrt", user_list)
 
-    # Check if analysis for this user is already cached
     if selected_user not in st.session_state.user_analysis_cache:
-        # Start computation for this user
-        st.session_state.user_analysis_cache[selected_user] = {}  # store results in a dict
+        st.session_state.user_analysis_cache[selected_user] = {}
         cache = st.session_state.user_analysis_cache[selected_user]
 
         # Stats
@@ -145,7 +120,7 @@ if mode == "Show Analysis":
         cache['busy_month'] = helper.month_activity_map(selected_user, df)
         cache['heatmap'] = helper.activity_heatmap(selected_user, df)
 
-        # Most busy users (only Overall)
+        # Most busy users (Overall)
         if selected_user == "Overall":
             df_users = df[df["user"] != "group_notification"]
             x, new_df = helper.most_busy_users(df_users)
@@ -160,10 +135,9 @@ if mode == "Show Analysis":
         # Emoji analysis
         cache['emoji'] = helper.emoji_helper(selected_user, df)
 
-    # Use cached data
     cache = st.session_state.user_analysis_cache[selected_user]
 
-    # Display Stats
+    # ========== DISPLAY STATISTICS ==========
     num_messages, words, num_media_messages, num_links = cache['stats']
     st.title("Top Statistics")
     col1, col2, col3, col4 = st.columns(4)
@@ -245,14 +219,10 @@ if mode == "Show Analysis":
     st.title("Emoji Analysis")
     col1, col2 = st.columns(2)
     with col1:
-        if emoji_df.empty:
-            st.write("No emojis found for the selected user.")
-        else:
-            st.dataframe(emoji_df)
+        if emoji_df.empty: st.write("No emojis found for the selected user.")
+        else: st.dataframe(emoji_df)
     with col2:
-        # plt.rcParams['font.family'] = 'Segoe UI Emoji'
-        if emoji_df.empty:
-            st.write("No emojis to display.")
+        if emoji_df.empty: st.write("No emojis to display.")
         else:
             fig, ax = plt.subplots()
             ax.pie(emoji_df['count'].head(), labels=emoji_df['emoji'].head(), autopct="%0.2f")
@@ -298,11 +268,9 @@ if mode == "Sentiment Analysis":
     sns.heatmap(sim_df_top, mask=mask, cmap="GnBu", annot=True, fmt=".2f", annot_kws={"size":8}, ax=ax)
     st.pyplot(fig)
 
-    # ========= STEP 6: Per-User Sentiment Breakdown (Top 50 Users) ==========
-    user_sentiment = pd.crosstab(df_sent["user"], df_sent["sentiment"])
+    # Per-User Sentiment Breakdown (Top 50)
     top_users = df_sent["user"].value_counts().head(50).index
     user_sentiment_top = user_sentiment.loc[top_users]
-
     st.write("### Per-User Sentiment Distribution (Top 50 Users)")
     fig, ax = plt.subplots(figsize=(14,6))
     user_sentiment_top.plot(kind="bar", stacked=True,
@@ -317,12 +285,3 @@ if mode == "Sentiment Analysis":
     negative_df = df_sent[df_sent["sentiment"] == "negative"].sort_values(by="confidence", ascending=False)
     st.write("### Top Negative Messages (Top 100)")
     st.dataframe(negative_df[["user", "message", "confidence"]].head(100))
-
-
-
-
-
-
-
-
-
