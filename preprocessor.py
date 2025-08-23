@@ -2,36 +2,32 @@ import re
 import pandas as pd
 
 def preprocess(data):
-    # Pattern to split date/time and message
+    # Match both 2-digit and 4-digit years
     pattern = r'(\d{1,2}/\d{1,2}/\d{2,4}),\s(\d{1,2}:\d{2})\s-\s'
-    messages = re.split(pattern, data)
 
+    messages = re.split(pattern, data)
+    # messages = ['', day, time, message, day, time, message,...]
     if not messages[0].strip():
         messages = messages[1:]
 
     dates = []
     texts = []
-
-    # Step safely in chunks of 3
-    for i in range(0, len(messages)-2, 3):
+    for i in range(0, len(messages), 3):
         date_str = f"{messages[i]},{messages[i+1]}"
         msg = messages[i+2]
-        dates.append(date_str.strip())
-        texts.append(msg.strip())
+        dates.append(date_str)
+        texts.append(msg)
 
     df = pd.DataFrame({'user_message': texts, 'message_date': dates})
 
-    # Flexible parsing for 2-digit and 4-digit years
+    # Try parsing both 2-digit and 4-digit years
     def parse_date(x):
-        # Remove any trailing dash and spaces
-        x = x.strip().rstrip(" -")
         for fmt in ['%d/%m/%Y,%H:%M', '%d/%m/%y,%H:%M']:
             try:
                 return pd.to_datetime(x, format=fmt)
             except:
                 continue
         return pd.NaT
-
 
     df['date'] = df['message_date'].apply(parse_date)
     df.drop(columns=['message_date'], inplace=True)
@@ -69,7 +65,14 @@ def preprocess(data):
     df['minute'] = df['date'].dt.minute
 
     # Period column
-    df['period'] = df['hour'].apply(lambda h: f"{h}-{h+1}" if h < 23 else "23-00")
+    period = []
+    for hour in df['hour']:
+        if hour == 23:
+            period.append(f"{hour}-00")
+        elif hour == 0:
+            period.append(f"00-{hour+1}")
+        else:
+            period.append(f"{hour}-{hour+1}")
+    df['period'] = period
 
     return df
-
