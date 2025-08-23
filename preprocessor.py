@@ -2,16 +2,23 @@ import re
 import pandas as pd
 
 def preprocess(data):
-    # Match both 2-digit and 4-digit years, time, and dash
-    pattern = r'(\d{1,2}/\d{1,2}/\d{2,4}),\s(\d{1,2}:\d{2})\s-\s'
+    """
+    Preprocess WhatsApp chat text into a structured DataFrame.
+    Handles 2-digit and 4-digit years, Bengali/Unicode names, and media messages.
+    """
 
+    # Pattern to split date, time, and message
+    pattern = r'(\d{1,2}/\d{1,2}/\d{2,4}),\s(\d{1,2}:\d{2})\s-\s'
     messages = re.split(pattern, data)
-    # messages = ['', day, time, message, day, time, message,...]
+    
+    # Remove empty first element if present
     if not messages[0].strip():
         messages = messages[1:]
 
     dates = []
     texts = []
+
+    # Reconstruct message list: [date, time, message, date, time, message,...]
     for i in range(0, len(messages), 3):
         date_str = f"{messages[i]},{messages[i+1]}"
         msg = messages[i+2]
@@ -20,7 +27,7 @@ def preprocess(data):
 
     df = pd.DataFrame({'user_message': texts, 'message_date': dates})
 
-    # Robust date parsing: 2-digit or 4-digit years
+    # Function to parse date supporting 2-digit and 4-digit years
     def parse_date(x):
         for fmt in ['%d/%m/%Y,%H:%M', '%d/%m/%y,%H:%M']:
             try:
@@ -32,9 +39,9 @@ def preprocess(data):
     df['date'] = df['message_date'].apply(parse_date)
     df.drop(columns=['message_date'], inplace=True)
 
+    # Extract user and message
     users = []
     messages_clean = []
-
     for msg in df['user_message']:
         entry = re.split(r'([\w\W]+?):\s', msg, maxsplit=1)
         if len(entry) >= 3:
@@ -48,7 +55,7 @@ def preprocess(data):
     df['message'] = messages_clean
     df.drop(columns=['user_message'], inplace=True)
 
-    # Remove media/deleted/empty messages
+    # Clean empty / media messages
     df['message'] = df['message'].astype(str).str.strip()
     remove_list = ["<Media omitted>", "This message was deleted", "You deleted this message"]
     df = df[~df["message"].isin(remove_list)]
@@ -65,6 +72,14 @@ def preprocess(data):
     df['minute'] = df['date'].dt.minute
 
     # Period column
-    df['period'] = df['hour'].apply(lambda hour: f"{hour}-{(hour+1)%24}")
+    period = []
+    for hour in df['hour']:
+        if hour == 23:
+            period.append(f"{hour}-00")
+        elif hour == 0:
+            period.append(f"00-{hour+1}")
+        else:
+            period.append(f"{hour}-{hour+1}")
+    df['period'] = period
 
     return df
