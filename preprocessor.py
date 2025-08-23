@@ -1,28 +1,15 @@
-# preprocessor.py
 import re
 import pandas as pd
 
 def preprocess(data):
-    """
-    Preprocess WhatsApp chat exported text into a DataFrame.
-    Handles both 2-digit and 4-digit years, trailing ' - ', media messages,
-    and group notifications.
-    """
-
-    # Regex to match the date-time at the start of each message
     pattern = r'(\d{1,2}/\d{1,2}/\d{2,4}),\s(\d{1,2}:\d{2})\s-\s'
-
-    # Split the text based on date-time pattern
     messages = re.split(pattern, data)
-    
-    # If the first element is empty, remove it
     if not messages[0].strip():
         messages = messages[1:]
 
     dates = []
     texts = []
 
-    # WhatsApp pattern: ['', day, time, message, day, time, message,...]
     for i in range(0, len(messages), 3):
         date_str = f"{messages[i]},{messages[i+1]}"
         msg = messages[i+2]
@@ -31,20 +18,12 @@ def preprocess(data):
 
     df = pd.DataFrame({'user_message': texts, 'message_date': dates})
 
-    # Custom date parser
-    def parse_date(x):
-        x = x.strip()
-        if x.endswith(" -"):
-            x = x[:-2]  # remove trailing ' -'
-        for fmt in ['%d/%m/%Y,%H:%M', '%d/%m/%y,%H:%M']:
-            try:
-                return pd.to_datetime(x, format=fmt)
-            except:
-                continue
-        return pd.NaT
-
-    # Apply parser
-    df['date'] = df['message_date'].apply(parse_date)
+    # ===== Flexible date parsing =====
+    df['date'] = pd.to_datetime(
+        df['message_date'].str.replace(r'\s-\s$', '', regex=True),
+        dayfirst=True,
+        errors='coerce'
+    )
     df.drop(columns=['message_date'], inplace=True)
 
     # Extract user and message
@@ -70,7 +49,7 @@ def preprocess(data):
     df = df[~df["message"].isin(remove_list)]
     df = df[df["message"] != ""].reset_index(drop=True)
 
-    # Add extra datetime columns
+    # Extra datetime columns
     df['only_date'] = df['date'].dt.date
     df['year'] = df['date'].dt.year
     df['month_num'] = df['date'].dt.month
@@ -80,7 +59,7 @@ def preprocess(data):
     df['hour'] = df['date'].dt.hour
     df['minute'] = df['date'].dt.minute
 
-    # Period column (e.g., 23-00, 00-01, etc.)
+    # Period
     period = []
     for hour in df['hour']:
         if hour == 23:
