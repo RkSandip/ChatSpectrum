@@ -17,14 +17,9 @@ from sklearn.metrics.pairwise import cosine_similarity
 import hashlib
 import os
 
-import matplotlib.font_manager as fm
-# Use bundled Bengali font
-bengali_font_path = "fonts/NotoSansBengali-VariableFont_wdth,wght.ttf"
-prop = fm.FontProperties(fname=bengali_font_path)
-plt.rcParams["font.family"] = prop.get_name()
 
 # Optional: fallback for emojis
-plt.rcParams["font.family"] = [prop.get_name(), "DejaVu Sans", "Noto Color Emoji"]
+plt.rcParams["font.family"] = ["DejaVu Sans", "Noto Color Emoji"]
 
 # ===================== Custom Background Color ===================== #bffcc6
 st.markdown(
@@ -312,6 +307,7 @@ if mode == "Sentiment Analysis":
     negative_df = df_sent[df_sent["sentiment"] == "negative"].sort_values(by="confidence", ascending=False)
     st.write("### Top Negative Messages (Top 100)")
     st.dataframe(negative_df[["user", "message", "confidence"]].head(100))
+
 
 
 
