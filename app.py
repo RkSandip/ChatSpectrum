@@ -24,7 +24,7 @@ bengali_font_path = "fonts/NotoSansBengali-VariableFont_wdth,wght.ttf"
 bengali_prop = fm.FontProperties(fname=bengali_font_path)
 
 # Default font for English / numbers
-default_fonts = ["DejaVu Sans", "Arial"]  # Available on Streamlit Cloud
+default_fonts = ["DejaVu Sans"]  # Available on Streamlit Cloud
 
 # Set matplotlib to try Bengali first, then English fonts
 plt.rcParams["font.family"] = [bengali_prop.get_name()] + default_fonts
@@ -317,6 +317,7 @@ if mode == "Sentiment Analysis":
     negative_df = df_sent[df_sent["sentiment"] == "negative"].sort_values(by="confidence", ascending=False)
     st.write("### Top Negative Messages (Top 100)")
     st.dataframe(negative_df[["user", "message", "confidence"]].head(100))
+
 
 
 
