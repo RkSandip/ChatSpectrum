@@ -2,28 +2,35 @@ import re
 import pandas as pd
 
 def preprocess(data):
-    # Match both 2-digit and 4-digit years
+    """
+    Preprocess WhatsApp exported chat text into a structured DataFrame.
+    Handles 2/4-digit years, system messages, emojis, and missing users.
+    """
+
+    # Regex pattern: date, time, dash
     pattern = r'(\d{1,2}/\d{1,2}/\d{2,4}),\s(\d{1,2}:\d{2})\s-\s'
 
-    # Split messages by date-time pattern
-    messages = re.split(pattern, data)
-    # messages = ['', day, time, message, day, time, message,...]
-    if not messages[0].strip():
-        messages = messages[1:]
+    # Split data using the pattern
+    split_data = re.split(pattern, data)
+    if not split_data[0].strip():
+        split_data = split_data[1:]
 
     dates = []
-    texts = []
-    for i in range(0, len(messages), 3):
-        date_str = f"{messages[i]},{messages[i+1]}"
-        msg = messages[i+2]
-        dates.append(date_str)
-        texts.append(msg)
+    messages = []
+    for i in range(0, len(split_data), 3):
+        try:
+            date_str = f"{split_data[i]},{split_data[i+1]}"
+            msg = split_data[i+2]
+        except IndexError:
+            continue  # skip incomplete entries
+        dates.append(date_str.strip())
+        messages.append(msg.strip())
 
-    df = pd.DataFrame({'user_message': texts, 'message_date': dates})
+    df = pd.DataFrame({'raw_message': messages, 'message_date': dates})
 
-    # ---------------- Parse dates safely ----------------
+    # ---------------- Parse dates ----------------
     def parse_date(x):
-        x = x.strip().rstrip(" -")  # remove trailing dash and spaces
+        x = x.strip().rstrip(" -")
         for fmt in ['%d/%m/%Y,%H:%M', '%d/%m/%y,%H:%M']:
             try:
                 return pd.to_datetime(x, format=fmt)
@@ -34,22 +41,21 @@ def preprocess(data):
     df['date'] = df['message_date'].apply(parse_date)
     df.drop(columns=['message_date'], inplace=True)
 
-    # ---------------- Extract users and messages ----------------
+    # ---------------- Extract users & clean messages ----------------
     users = []
-    messages_clean = []
-
-    for msg in df['user_message']:
+    clean_messages = []
+    for msg in df['raw_message']:
         entry = re.split(r'([\w\W]+?):\s', msg, maxsplit=1)
         if len(entry) >= 3:
-            users.append(entry[1])
-            messages_clean.append(entry[2])
+            users.append(entry[1].strip())
+            clean_messages.append(entry[2].strip())
         else:
             users.append('group_notification')
-            messages_clean.append(entry[0])
+            clean_messages.append(msg.strip())
 
     df['user'] = users
-    df['message'] = messages_clean
-    df.drop(columns=['user_message'], inplace=True)
+    df['message'] = clean_messages
+    df.drop(columns=['raw_message'], inplace=True)
 
     # ---------------- Remove unwanted messages ----------------
     df['message'] = df['message'].astype(str).str.strip()
