@@ -19,12 +19,12 @@ import hashlib
 import os
 import matplotlib.font_manager as fm
 
-# Path to your variable TTF font
+# Path to your Bengali TTF font
 bengali_font_path = "fonts/NotoSansBengali-VariableFont_wdth,wght.ttf"
 prop = fm.FontProperties(fname=bengali_font_path)
 
-# Set font for matplotlib plots
-plt.rcParams["font.family"] = [prop.get_name(), "DejaVu Sans"]
+# Only use Bengali font to avoid warnings
+plt.rcParams["font.family"] = [prop.get_name()]
 
 
 # plt.rcParams["font.family"] = ["DejaVu Sans", "Noto Color Emoji", "Nirmala UI"]
@@ -314,6 +314,7 @@ if mode == "Sentiment Analysis":
     negative_df = df_sent[df_sent["sentiment"] == "negative"].sort_values(by="confidence", ascending=False)
     st.write("### Top Negative Messages (Top 100)")
     st.dataframe(negative_df[["user", "message", "confidence"]].head(100))
+
 
 
 
