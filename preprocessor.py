@@ -30,18 +30,17 @@ def preprocess(data):
     df = pd.DataFrame({'user_message': texts, 'message_date': dates})
 
     # Robust datetime parsing for 2-digit or 4-digit year
-    def parse_date(x):
-        x = x.strip()
-        for fmt in ['%d/%m/%Y,%H:%M', '%d/%m/%y,%H:%M']:
-            try:
-                dt = pd.to_datetime(x, format=fmt)
-                # If year < 100, adjust to 2000+ year
-                if dt.year < 100:
-                    dt = dt.replace(year=dt.year + 2000)
-                return dt
-            except:
-                continue
-        return pd.NaT
+   def parse_date(x):
+    for fmt in ['%d/%m/%Y,%H:%M', '%d/%m/%y,%H:%M']:
+        try:
+            dt = pd.to_datetime(x, format=fmt)
+            if dt.year < 100:  # convert 2-digit year to 2000+
+                dt = dt.replace(year=dt.year + 2000)
+            return dt
+        except:
+            continue
+    return pd.NaT
+
 
     df['date'] = df['message_date'].apply(parse_date)
     df.drop(columns=['message_date'], inplace=True)
@@ -90,3 +89,4 @@ def preprocess(data):
     df['period'] = period
 
     return df
+
