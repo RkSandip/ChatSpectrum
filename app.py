@@ -283,10 +283,4 @@ if mode == "Sentiment Analysis":
 
 
 
-# --- Footer ---
-st.markdown("---")
-st.markdown(
-    "👨‍💻 Developer: **Sandip**  \n"
-    "GitHub: **github.com/YourUsername**"
-)
 
