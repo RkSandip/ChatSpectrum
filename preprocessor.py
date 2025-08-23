@@ -23,15 +23,16 @@ def preprocess(data):
     df = pd.DataFrame({'raw_message': messages, 'message_date': dates})
 
     # ----- Safe date parsing -----
+    # ----- Safe date parsing -----
     def parse_date(x):
-        x = x.strip().rstrip(" -")
-        # Try both 4-digit and 2-digit year formats
+        x = x.strip().rstrip(" -")  # remove trailing dash/space
         for fmt in ['%d/%m/%Y,%H:%M', '%d/%m/%y,%H:%M']:
             try:
                 return pd.to_datetime(x, format=fmt)
             except:
                 continue
-        return pd.NaT
+        return pd.NaT  # if both fail, mark as missing
+
 
     df['date'] = df['message_date'].apply(parse_date)
     df.drop(columns=['message_date'], inplace=True)
@@ -79,3 +80,4 @@ def preprocess(data):
     df['period'] = period
 
     return df
+
