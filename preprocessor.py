@@ -23,12 +23,15 @@ def preprocess(data):
 
     # Flexible parsing for 2-digit and 4-digit years
     def parse_date(x):
+        # Remove any trailing dash and spaces
+        x = x.strip().rstrip(" -")
         for fmt in ['%d/%m/%Y,%H:%M', '%d/%m/%y,%H:%M']:
             try:
                 return pd.to_datetime(x, format=fmt)
             except:
                 continue
         return pd.NaT
+
 
     df['date'] = df['message_date'].apply(parse_date)
     df.drop(columns=['message_date'], inplace=True)
@@ -69,3 +72,4 @@ def preprocess(data):
     df['period'] = df['hour'].apply(lambda h: f"{h}-{h+1}" if h < 23 else "23-00")
 
     return df
+
